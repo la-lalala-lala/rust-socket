@@ -1,0 +1,49 @@
+#debug模式，true输出控制台日志，false只输出文件日志.生产环境需要关闭debug，rbatis也需移除"debug_mode"
+#Debug mode, true for outputting console log, false for only outputting file log. Debug mode should be turned off in production, and "debug_mode" should also be removed from rbatis.
+debug: true
+#名称
+#Name
+server_name: "rust-socket"
+#server 地址
+server_url: "0.0.0.0:9003"
+#socket 地址
+socket_url: "0.0.0.0:9004"
+#主数据库地址
+primary_database_url: "mysql://saya:Sayaaccn666@-:3306/primary_1"
+#redis地址
+redis_url: "redis://:redis666@-:6379/6"
+#日志文件存放目录
+#Log file storage directory
+log_dir: "logs/"
+#日志分割尺寸-单位KB,MB,GB
+#Log rotation size - unit: KB, MB, GB
+log_temp_size: "10MB"
+#日志打包格式可选“”（空-保留.log）“gzip”（gz压缩包）“zip”（zip压缩包）“lz4”（lz4压缩包（非常快））
+#需要打开以下选项
+#toml文件里面，fast_log 添加   fast_log = { version = "1.5",features = ["lz4", "zip", "gzip"]}
+#src/config/log.rs    解除   fn choose_packer()下的注释
+#application.yml      添加   log_pack_compress: "zip"
+#--------------------------------------------------------------------------------
+#Log packing format options: "" (empty - keep .log), "gzip" (gz compressed package), "zip" (zip compressed package), "lz4" (lz4 compressed package (very fast))
+#Need to open the following options:
+#In the toml file, add "fast_log = { version = "1.5",features = ["lz4", "zip", "gzip"]}" to fast_log
+#Uncomment the function choose_packer() in src/config/log.rs
+#Add "log_pack_compress: "zip"" to application.yml
+log_pack_compress: ""
+#日志滚动保留-保留全部: All,按时间保留(秒): KeepTime(i64),按版本保留: KeepNum(i64)
+#Log rolling retention - keep all: All, keep by time (in seconds): KeepTime(i64), keep by version: KeepNum(i64)
+log_rolling_type: "KeepNum(20)"
+#日志等级: off,info,error,warn,debug,trace
+#Log level: off, info, error, warn, debug, trace
+log_level: "info"
+#log type,choose one of  [mmap,file]
+log_type: "mmap"
+#日志通道长度，null为无界队列，非null为有界队列（性能好）
+#Log channel length, null for unbounded queue, non-null for bounded queue (better performance)
+log_chan_len: 100000
+#接口白名单（免登陆直接访问）
+#Interface whitelist (direct access without login)
+white_list_api:
+  - "/message/send"
+#数据目录
+data_dir: "/Users/saya/warehouse"
