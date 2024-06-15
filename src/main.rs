@@ -115,7 +115,7 @@ async fn main() -> Result<(), std::io::Error> {
             .route("/close", web::get().to(close))
             .route("/send", web::get().to(send))
     })
-        .bind("127.0.0.1:8001")?
+        .bind("0.0.0.0:8001")?
         .run();
 
     tokio::try_join!(socket_server, actix_server)?;
