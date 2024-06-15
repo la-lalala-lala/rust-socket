@@ -13,8 +13,7 @@ lazy_static! {
 
 // Define WebSocket actor
 struct MyWebSocket {
-    client_id: String,
-    sessions: Arc<Mutex<HashMap<String, Addr<MyWebSocket>>>>,
+    client_id: String
 }
 
 // MyWebSocket 实现了 Actor trait，定义了 WebSocket 的行为和生命周期管理。
@@ -23,8 +22,8 @@ impl Actor for MyWebSocket {
 
     fn started(&mut self, ctx: &mut Self::Context) {
         // Store the WebSocket address in sessions map
-        println!("有客户端[{}]加入",self.client_id.clone());
-        self.sessions.lock().unwrap().insert(self.client_id.clone(), ctx.address());
+        WEBSOCKET_SESSIONS.lock().unwrap().insert(self.client_id.clone(), ctx.address());
+        println!("Client connected: {}", self.client_id);
     }
 
     // 连接断开处理
@@ -32,8 +31,9 @@ impl Actor for MyWebSocket {
         // 当客户端主动或意外断开 WebSocket 连接时，Actix 框架会自动调用 MyWebSocket 的 stopped 方法。
         // 在 stopped 方法中，会从 sessions 中移除断开连接的客户端信息，确保不会继续保留已断开连接的状态。
         // Remove client identifier from sessions map
-        println!("有客户端[{}]断开",self.client_id.clone());
-        self.sessions.lock().unwrap().remove(&self.client_id);
+        // Remove client identifier from global sessions map
+        WEBSOCKET_SESSIONS.lock().unwrap().remove(&self.client_id);
+        println!("Client disconnected: {}", self.client_id);
     }
 }
 
@@ -92,12 +92,9 @@ impl Handler<Message> for MyWebSocket {
 async fn ws_handler(req: HttpRequest, stream: web::Payload) -> Result<HttpResponse, actix_web::Error> {
     // 生成一个唯一的客户端表示
     let client_id = Uuid::new_v4().to_string();
-    // Extract sessions from web::Data
-    let sessions_inner = WEBSOCKET_SESSIONS.clone();
     // 创建一个新的 MyWebSocket Actor 实例
     let actor = MyWebSocket {
-        client_id: client_id.clone(),
-        sessions: sessions_inner.clone(),
+        client_id: client_id.clone()
     };
     // Start the WebSocket handshake
     let resp = ws::start(actor, &req, stream)?;
@@ -141,13 +138,9 @@ async fn broadcast_message(msg: web::Bytes) -> HttpResponse {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    // 创建了一个 sessions 变量，类型为 Arc<Mutex<HashMap<String, Addr<MyWebSocket>>>>，用于存储所有 WebSocket 客户端的地址。
-    let sessions: Arc<Mutex<HashMap<String, Addr<MyWebSocket>>>> = Arc::new(Mutex::new(HashMap::new()));
-
     // Start HTTP server
     HttpServer::new(move || {
         App::new()
-            //.app_data(web::Data::new(sessions.clone()))
             // WebSocket endpoint
             .route("/ws", web::get().to(ws_handler))
             // HTTP endpoint to send message to client
