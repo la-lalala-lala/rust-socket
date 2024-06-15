@@ -6,7 +6,49 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-actix-web = "4.0.0"
-async-std = "1.12.0"
-lazy_static = "1.4.0"
+rbs = { version = "4.4" }
+# 线上环境，移除"debug_mode"模式features = ["debug_mode"]
+rbatis = { version = "4.4", features = ["debug_mode"]}
+rbdc-mysql={version="4.4"}
+#rbatis orm dep must use async-std(Because actix-web relies on tokio0.2)
 tokio = { version = "1", features = ["full"] }
+#serde and json
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde_yaml = "0.9"
+#log
+log = "0.4"
+#fast_log enable features = ["lz4", "zip", "gzip"], and edit src/config/log.rs fn choose_packer(),edit application.yml add log_pack_compress: "zip"
+fast_log = { version = "1.6", features = ["mmap"]}
+futures= { version = "0.3.21", default-features = false, features = ["std"] }
+#web server
+actix-web = { version = "4", default-features = false, features = ["macros"] }
+actix-http = "3"
+actix-multipart = "0.4"
+actix-files = "0.6.0"
+# 定时任务
+delay_timer = "0.11.5"
+#snowflake
+rustflake = "0.1"
+#http client,use rust-tls replace to native tls
+reqwest = { version = "0.11.11",default-features = false, features = ["json","cookies","rustls-tls"] }
+#static
+lazy_static = "1.4.0"
+futures-util = "0.3.21"
+md5 = "0.7"
+# Socket
+async-std = "1.12.0"
+#redis
+redis = { version = "0.22.3", features = ["tokio-comp"] }
+# 发送邮件
+lettre="0.10.0-alpha.5"
+#用于货币金额
+rust_decimal = "1.25.0"
+# 日期时间库
+chrono = { version = "0.4", features = ["serde"] }
+# 正则相关
+regex = "1.7.0"
+#外部加载配置
+config = "0.10.1"
+#随机数
+rand = "0.8.5"

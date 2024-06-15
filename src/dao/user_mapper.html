@@ -1,0 +1,104 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "https://github.com/rbatis/rbatis_sql/raw/main/mybatis-3-mapper.dtd">
+<mapper>
+    <!-- 修改用户信息  -->
+    <update id="update_user">
+        ` update `user` `
+        <set>
+            <if test="user.password != ''">
+                `  `password` = #{user.password}, `
+            </if>
+            <if test="user.name != ''">
+                `  `name` = #{user.name}, `
+            </if>
+            <if test="user.sex != ''">
+                `  `sex` = #{user.sex}, `
+            </if>
+            <if test="user.qq != ''">
+                `  `qq` = #{user.qq}, `
+            </if>
+            <if test="user.email != ''">
+                `  `email` = #{user.email}, `
+            </if>
+            <if test="user.phone != ''">
+                `  `phone` = #{user.phone}, `
+            </if>
+            <if test="user.birthday != ''">
+                `  `birthday` = #{user.birthday}, `
+            </if>
+            <if test="user.hometown != ''">
+                `  `hometown` = #{user.hometown}, `
+            </if>
+            <if test="user.autograph != ''">
+                `  `autograph` = #{user.autograph}, `
+            </if>
+            <if test="user.background != 0">
+                `  `background` = #{user.background}, `
+            </if>
+            <if test="user.logo != ''">
+                `  `logo` = #{user.logo}, `
+            </if>
+            <if test="user.organize_id != 0">
+                `  `organize_id` = #{user.organize_id}, `
+            </if>
+            <if test="user.state != 0">
+                `  `state` = #{user.state}, `
+            </if>
+            ` `update_time` = now() `
+        </set>
+        ` where `account` = #{user.account} `
+    </update>
+
+    <select id="select_page">
+        ` select * from `user` `
+        <where>
+            <if test="user.account != ''">
+                `  and `account` like concat(#{user.account},'%') `
+            </if>
+            <if test="user.name != ''">
+                `  and `name` like concat(#{user.name},'%') `
+            </if>
+            <if test="user.email != ''">
+                `  and `email` like concat(#{user.email},'%') `
+            </if>
+            <if test="user.phone != ''">
+                `  and `phone` like concat(#{user.phone},'%') `
+            </if>
+            <if test="user.organize_id != 0">
+                `  and `organize_id` = #{user.organize_id} `
+            </if>
+            <if test="user.state != 0">
+                `  and `state` = #{user.state} `
+            </if>
+            <if test="extend.begin_time != '' && extend.end_time != ''">
+                `  and `create_time` between date_format(#{extend.begin_time},'%Y-%m-%d 00:00:00')  and date_format(#{extend.end_time },'%Y-%m-%d 23:59:59') `
+            </if>
+        </where>
+        ` limit #{extend.page_no},#{extend.page_size} `
+    </select>
+    <select id="select_count">
+        ` select count(1) from `user` `
+        <where>
+            <if test="user.account != ''">
+                `  and `account` like concat(#{user.account},'%') `
+            </if>
+            <if test="user.name != ''">
+                `  and `name` like concat(#{user.name},'%') `
+            </if>
+            <if test="user.email != ''">
+                `  and `email` like concat(#{user.email},'%') `
+            </if>
+            <if test="user.phone != ''">
+                `  and `phone` like concat(#{user.phone},'%') `
+            </if>
+            <if test="user.organize_id != 0">
+                `  and `organize_id` = #{user.organize_id} `
+            </if>
+            <if test="user.state != 0">
+                `  and `state` = #{user.state} `
+            </if>
+            <if test="extend.begin_time != '' && extend.end_time != ''">
+                `  and `create_time` between date_format(#{extend.begin_time},'%Y-%m-%d 00:00:00')  and date_format(#{extend.end_time },'%Y-%m-%d 23:59:59') `
+            </if>
+        </where>
+    </select>
+</mapper>
