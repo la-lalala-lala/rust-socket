@@ -1274,7 +1274,6 @@ dependencies = [
  "actix-web",
  "async-std",
  "lazy_static",
- "rand",
  "tokio",
 ]
 
