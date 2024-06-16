@@ -3,8 +3,15 @@ use actix_web::{web, App, HttpRequest, HttpResponse, HttpServer};
 use actix_web_actors::ws;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
 use lazy_static::lazy_static;
 use uuid::Uuid;
+
+use tokio::process::Command;
+use tokio::io::{self, AsyncBufReadExt, BufReader};
+use tokio::sync::mpsc;
+use tokio::task;
+use tokio::time::timeout;
 
 // Lazy static global variable for WebSocket sessions
 lazy_static! {
@@ -135,6 +142,87 @@ async fn broadcast_message(msg: web::Bytes) -> HttpResponse {
     HttpResponse::Ok().body("Message broadcasted to all clients")
 }
 
+fn do_send_message(msg:String){
+    WEBSOCKET_SESSIONS.lock().unwrap().values().for_each(|addr| {
+        addr.do_send(Message {
+            client_id: "server".to_owned(),  // Using "server" as pseudo client_id for broadcast
+            msg: msg.clone(),
+        });
+    });
+}
+
+// HTTP handler to execute shell command and send result to all clients
+async fn execute_command(msg: web::Bytes) -> HttpResponse {
+    let command = String::from_utf8_lossy(&msg).to_string().trim().to_string();
+    println!("Executing command: {}", command.clone());
+    let command1 = "ping 127.0.0.1";//"ping 127.0.0.1";//"ls /dev/cu.*";
+    // Command to run
+    // Run the command and get the output
+    let mut cmd = Command::new("sh")
+        .arg("-c")
+        .arg(command1)
+        .stdout(std::process::Stdio::piped())
+        .spawn()
+        .expect("Failed to start command");
+
+    // Get the stdout of the command
+    let stdout = cmd.stdout.take().expect("Failed to open stdout");
+
+    // Create a BufReader to read the output line by line
+    let reader = BufReader::new(stdout);
+    let mut lines = reader.lines();
+
+    // Timeout duration
+    let duration = Duration::from_secs(10); // 10 seconds timeout
+
+
+    // Create a future for reading lines and printing them
+    let read_lines = async {
+        while let Some(line) = lines.next_line().await? {
+            do_send_message(line.clone());
+            println!("{}", line);
+        }
+        Ok::<(), io::Error>(())
+    };
+
+    // Pin the future to make it Unpin
+    let mut read_lines = Box::pin(read_lines);
+
+    // Run the future with a timeout
+    let result = timeout(duration, &mut read_lines).await;
+
+    match result {
+        Ok(Ok(())) => {
+            println!("Command completed within timeout");
+        }
+        Ok(Err(e)) => {
+            eprintln!("Error reading line: {}", e);
+        }
+        Err(_) => {
+            eprintln!("Command timed out. Killing process...");
+            // If the timeout expires, kill the process
+            cmd.kill().await.expect("Failed to kill process");
+        }
+    }
+
+    // Wait for the command to complete (even if we have already killed it)
+    let status = cmd.stdout.expect("Failed to run command");
+    println!("Command exited with status: {:?}", status);
+
+    // // Read and print lines as they become available
+    // while let Some(line) = lines.next_line().await.unwrap() {
+    //
+    //     // Send command result to all WebSocket clients
+    //     WEBSOCKET_SESSIONS.lock().unwrap().values().for_each(|addr| {
+    //         addr.do_send(Message {
+    //             client_id: "server".to_owned(),  // Using "server" as pseudo client_id for command output
+    //             msg: line.clone(),
+    //         });
+    //     });
+    //     println!("{}", line);
+    // }
+    HttpResponse::Ok().body(format!("Command executed: {}\nResult sent to all clients", command))
+}
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -145,9 +233,39 @@ async fn main() -> std::io::Result<()> {
             .route("/ws", web::get().to(ws_handler))
             // HTTP endpoint to send message to client
             .route("/send/{client_id}", web::post().to(send_message))
+            // HTTP endpoint to broadcast message to all clients
             .route("/broadcast", web::post().to(broadcast_message))
+            // HTTP endpoint to execute shell command and send result to all clients
+            .route("/execute_command", web::post().to(execute_command))
     })
         .bind("0.0.0.0:8080")?
         .run()
         .await
 }
+
+// #[tokio::main]
+// async fn main() -> io::Result<()> {
+//     // Command to run
+//     let command = "ls /dev/cu.*";
+//
+//     // Run the command and get the output
+//     let mut cmd = Command::new("sh")
+//         .arg("-c")
+//         .arg(command)
+//         .stdout(std::process::Stdio::piped())
+//         .spawn()
+//         .expect("Failed to start command");
+//
+//     // Get the stdout of the command
+//     let stdout = cmd.stdout.take().expect("Failed to open stdout");
+//
+//     // Create a BufReader to read the output line by line
+//     let reader = BufReader::new(stdout);
+//     let mut lines = reader.lines();
+//
+//     // Read and print lines as they become available
+//     while let Some(line) = lines.next_line().await? {
+//         println!("{}", line);
+//     }
+//     Ok(())
+// }
